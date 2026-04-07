@@ -1,106 +1,125 @@
 # Android MultiPass (Frida)
 
-Set multiple additional lock-screen passwords on an Android device by hooking the system lock credential verification flow with Frida.
-
-This project lets you define:
-
-- one real device password
-- many extra passwords that should be accepted
-
-When one of the extra passwords is entered, the hook replaces it with the real password before Android verifies credentials.
-
-## Overview
-
-Android MultiPass attaches to Android system_server and installs a runtime hook in `LockSettingsService` using Frida.
-The hook checks incoming credentials against a configured list of additional passwords. If the input matches, it swaps the credential bytes with the actual password bytes and lets normal Android verification continue.
-
-This allows multiple accepted input passwords while preserving one canonical real password on the system.
-
-## How It Works
-
-1. Python parses command-line arguments for:
-
-- actual password
-- one or more additional passwords
-
-2. Python attaches to process:
-
-- `system_server`
-
-3. Python loads the Frida JavaScript hook and calls an exported initializer with runtime config.
-
-4. JavaScript hooks:
-
-- `com.android.server.locksettings.LockSettingsService.doVerifyCredential`
-
-5. On each verification:
-
-- read incoming credential bytes
-- convert bytes to string
-- if input is in additional passwords, replace credential with actual password bytes
-- call original method
+Android MultiPass hooks Android lock credential verification with Frida and lets you unlock using multiple strategies, while still forwarding verification through the real device password.
 
 ## Features
 
-- Runtime configuration via CLI (no hardcoded passwords required)
-- Supports multiple additional passwords
-- Keeps the Android verification path intact by forwarding to original method
-- Clear separation between argument parsing, injection, and hook logic
-- Works through Frida RPC initialization
+MultiPass supports several acceptance modes in addition to the main password:
+
+- Additional exact passwords (`-a`, `--additional`)
+- Regex-based password matching (`-r`, `--regex`)
+- Unordered-character matching (`-u`, `--unordered`)
+- Full bypass mode (`-d`, `--disable`)
+
+All accepted inputs are converted into the real password before Android performs verification.
+
+## How It Works
+
+1. Python parses and validates CLI arguments.
+2. Python attaches to `system_server` over USB using Frida.
+3. Python builds and loads `hook.js`.
+4. Python passes runtime config to JavaScript via Frida RPC.
+5. JavaScript hooks:
+   `com.android.server.locksettings.LockSettingsService.doVerifyCredential`.
+6. On each password attempt, the hook:
+   - reads the input credential
+   - checks configured acceptance rules
+   - replaces accepted input with the real password
+   - calls the original Android method
+
+## Acceptance Rules
+
+An entered password is accepted if any rule matches:
+
+1. Disable mode is enabled (`--disable`)
+2. It exactly equals the real password (`--password`)
+3. It is in the additional password list (`--additional`)
+4. It matches the regex pattern (`--regex`)
+5. It is a character-anagram match of real/additional passwords (`--unordered`)
+
+## CLI Arguments
+
+- `-p`, `--password` (required)
+  Real lock-screen password configured on the device.
+- `-a`, `--additional` (optional, default: empty list)
+  One or more additional exact passwords.
+- `-r`, `--regex` (optional, default: `(?!)`)
+  Regex pattern used to accept additional passwords. Default pattern rejects everything.
+- `-u`, `--unordered` (optional flag)
+  Accept passwords that contain the same characters in any order.
+- `-d`, `--disable` (optional flag)
+  Disable verification checks and accept any entered password.
+
+### Validation
+
+- `--password` must be at least 4 characters.
+- Every entry in `--additional` must be at least 4 characters.
+- `--regex` must compile as a valid Python regular expression.
 
 ## Requirements
 
-- Python 3.9+ (recommended)
-- Frida Python package
-- Frida runtime/tooling compatible with your target device
+- Python 3.9+
+- `frida` Python package
 - Android device connected over USB
-- Sufficient privileges to attach to `system_server`
-- Environment where hooking `system_server` is possible
+- Frida environment compatible with target device
+- Privileges sufficient to attach to `system_server`
+
+## Install
+
+```bash
+py -m pip install frida
+```
 
 ## Usage
 
-1. Install Python dependencies:
-
-   ```bash
-   py -m pip install frida
-   ```
-
-2. Ensure Frida setup on host/device is complete and versions are compatible.
-
-3. Run the script:
-
-   ```bash
-   py main.py --actual-password YOUR_REAL_PASSWORD --additional-passwords PASS1 PASS2 PASS3
-   ```
-
-**Argument details:**
-
-- `--actual-password`
-  The real lock-screen password configured on the device.
-- `--additional-passwords`
-  One or more alternative passwords that should also be accepted.
-
-## Example
-
-**Example command:**
+Basic:
 
 ```bash
-py main.py --actual-password 1234 --additional-passwords 1111 2222 3333 4444
+py main.py -p 1234
 ```
 
-**Behavior:**
+With additional passwords:
 
-- Every password entered in the lock-screen is intercepted.
-- If the entered password matches one of 1111, 2222, 3333 or 4444, it is changed to the actual password, 1234.
-- Android unlocks the device, as if 1234 was entered.
+```bash
+py main.py -p 1234 -a 1111 2222 3333
+```
+
+With regex:
+
+```bash
+py main.py -p 1234 -r "^(1111|2222)$"
+```
+
+With unordered matching:
+
+```bash
+py main.py -p 1234 -a 9876 -u
+```
+
+With disable mode:
+
+```bash
+py main.py -p 1234 -d
+```
+
+Combined example:
+
+```bash
+py main.py -p 1234 -a 1111 2222 -r "^9[0-9]{3}$" -u
+```
+
+## Logging
+
+At runtime, MultiPass logs:
+
+- each entered password
+- why a password was accepted (password/additional/regex/unordered/disable)
+- rejected attempts
+- Frida script errors (description + stack)
 
 ## Project Structure
 
-- [main.py](main.py)
-  Entry point. Parses arguments, injects hook, and keeps process alive.
-- [argument_parser.py](argument_parser.py)
-  Defines CLI options and validation.
-- [hook_injector.py](hook_injector.py)
-  Builds JS with Frida compiler, attaches to system_server, loads script, sends config via RPC.
-- [hook.js](hook.js)
-  Installs Java hook and performs credential substitution logic.
+- [main.py](main.py): Entry point, logging setup, argument parsing, injection, process keep-alive.
+- [argument_parser.py](argument_parser.py): CLI definition and argument validation.
+- [hook_injector.py](hook_injector.py): Frida compile/load, process attach, RPC config injection, message handling.
+- [hook.js](hook.js): Credential interception and acceptance logic.

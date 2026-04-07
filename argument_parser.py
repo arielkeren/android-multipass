@@ -59,7 +59,7 @@ def parse_arguments() -> argparse.Namespace:
         "-u",
         "--unordered",
         action="store_true",
-        help="Passwords are accepted in any order",
+        help="Accept passwords in any order",
     )
     parser.add_argument(
         "-d",
