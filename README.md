@@ -12,6 +12,7 @@ MultiPass supports several acceptance modes and device-state controls in additio
 - Immutable mode (`--immutable`)
 - Full bypass mode (`--unlocked`)
 - Hard lock mode (`--locked`)
+- Changing user ID (`--user`)
 
 Accepted inputs are converted into the real password before Android performs verification. Rejected inputs are replaced with an always-failing credential.
 
@@ -62,6 +63,8 @@ An entered password is rejected before acceptance checks if either rule matches:
   Accept any entered password.
 - `--locked` (optional flag)
   Reject all entered passwords.
+- `--user` (optional)
+  User ID context to target. Accepts a numeric user ID (including negative values) or one of: `null`, `frp`, `repair`.
 
 ### Validation
 
@@ -69,6 +72,7 @@ An entered password is rejected before acceptance checks if either rule matches:
 - Every entry in `--extra` must be at least 4 characters.
 - `--regex` must compile as a valid Python regular expression.
 - `--locked` and `--unlocked` cannot be used together.
+- `--user` must be a number or one of `null`, `frp`, `repair`.
 
 ## Requirements
 
@@ -126,6 +130,12 @@ With hard lock mode:
 
 ```bash
 py main.py -p 1234 -l
+```
+
+With a specific user ID:
+
+```bash
+py main.py -p 1234 --user frp
 ```
 
 Combined example:
