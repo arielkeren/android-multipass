@@ -119,17 +119,10 @@ const installHook = () => {
       const input = bytesToString(credential.mCredential.value);
       send(`Password entered: ${input}`);
 
-      if (isRejected(input) || !isAccepted(input)) {
+      if (isRejected(input) || !isAccepted(input))
         credential.mCredential.value = WRONG_PASSWORD;
-        return this.doVerifyCredential(
-          credential,
-          userId,
-          progressCallback,
-          flags,
-        );
-      }
+      else credential.mCredential.value = stringToBytes(config.password);
 
-      credential.mCredential.value = stringToBytes(config.password);
       return this.doVerifyCredential(
         credential,
         userId,
