@@ -3,18 +3,18 @@ import logging
 import argparse
 import frida
 
-SCRIPT_PATH = "hook.js"
-PROCESS_TO_ATTACH = "system_server"
-MESSAGE_EVENT = "message"
+_SCRIPT_PATH = "hook.js"
+_PROCESS_TO_ATTACH = "system_server"
+_MESSAGE_EVENT = "message"
 
-USER_NAME_TO_ID = {
+_USER_NAME_TO_ID = {
     "null": -10000,
     "frp": -9999,
     "repair": -9998,
 }
 
 
-class VariableName(enum.StrEnum):
+class _VariableName(enum.StrEnum):
     PASSWORD = "password"
     EXTRA = "extra"
     REGEX = "regex"
@@ -25,52 +25,52 @@ class VariableName(enum.StrEnum):
     USER = "user"
 
 
-class MessageType(enum.StrEnum):
+class _MessageType(enum.StrEnum):
     SEND = "send"
     ERROR = "error"
 
 
-class MessageKey(enum.StrEnum):
+class _MessageKey(enum.StrEnum):
     TYPE = "type"
     PAYLOAD = "payload"
     DESCRIPTION = "description"
 
 
-def user_id_to_number(user_id: str | None) -> int | None:
+def _user_id_to_number(user_id: str | None) -> int | None:
     if user_id is None:
         return None
     if user_id.isdigit() or (user_id.startswith("-") and user_id[1:].isdigit()):
         return int(user_id)
-    return USER_NAME_TO_ID[user_id.lower()]
+    return _USER_NAME_TO_ID[user_id.lower()]
 
 
-def on_message(message: dict[str, object], _: bytes | None) -> None:
-    if message[MessageKey.TYPE] == MessageType.SEND:
-        logging.info(message[MessageKey.PAYLOAD])
-    elif message[MessageKey.TYPE] == MessageType.ERROR:
+def _on_message(message: dict[str, object], _: bytes | None) -> None:
+    if message[_MessageKey.TYPE] == _MessageType.SEND:
+        logging.info(message[_MessageKey.PAYLOAD])
+    elif message[_MessageKey.TYPE] == _MessageType.ERROR:
         logging.error(
-            f"(Description) {message[MessageKey.DESCRIPTION]}\n(Stack) {message['stack']}"
+            f"(Description) {message[_MessageKey.DESCRIPTION]}\n(Stack) {message['stack']}"
         )
 
 
 def inject_hook(args: argparse.Namespace) -> None:
     compiler = frida.Compiler()
-    bundle = compiler.build(SCRIPT_PATH)
+    bundle = compiler.build(_SCRIPT_PATH)
 
-    session = frida.get_usb_device().attach(PROCESS_TO_ATTACH)
+    session = frida.get_usb_device().attach(_PROCESS_TO_ATTACH)
     script = session.create_script(bundle)
-    script.on(MESSAGE_EVENT, on_message)
+    script.on(_MESSAGE_EVENT, _on_message)
     script.load()
 
     script.exports_sync.init_config(
         {
-            VariableName.PASSWORD: args.password,
-            VariableName.EXTRA: args.extra,
-            VariableName.REGEX: args.regex,
-            VariableName.ANAGRAM: args.anagram,
-            VariableName.IMMUTABLE: args.immutable,
-            VariableName.UNLOCKED: args.unlocked,
-            VariableName.LOCKED: args.locked,
-            VariableName.USER: user_id_to_number(args.user),
+            _VariableName.PASSWORD: args.password,
+            _VariableName.EXTRA: args.extra,
+            _VariableName.REGEX: args.regex,
+            _VariableName.ANAGRAM: args.anagram,
+            _VariableName.IMMUTABLE: args.immutable,
+            _VariableName.UNLOCKED: args.unlocked,
+            _VariableName.LOCKED: args.locked,
+            _VariableName.USER: _user_id_to_number(args.user),
         }
     )

@@ -1,7 +1,7 @@
 import sys
 import logging
 from logger_configuration import configure_logger
-from argument_parser import parse_arguments
+from arguments import parse_arguments
 from hook_injector import inject_hook
 
 ERROR_EXIT_CODE = 1
