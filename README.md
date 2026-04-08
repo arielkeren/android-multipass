@@ -6,12 +6,12 @@ Android MultiPass hooks Android lock credential verification with Frida and lets
 
 MultiPass supports several acceptance modes and device-state controls in addition to the main password:
 
-- Extra exact passwords (`-e`, `--extra`)
-- Regex-based password matching (`-r`, `--regex`)
-- Anagram matching (`-a`, `--anagram`)
-- Immutable mode (`-i`, `--immutable`)
-- Full bypass mode (`-u`, `--unlocked`)
-- Hard lock mode (`-l`, `--locked`)
+- Extra exact passwords (`--extra`)
+- Regex-based password matching (`--regex`)
+- Anagram matching (`--anagram`)
+- Immutable mode (`--immutable`)
+- Full bypass mode (`--unlocked`)
+- Hard lock mode (`--locked`)
 
 Accepted inputs are converted into the real password before Android performs verification. Rejected inputs are replaced with an always-failing credential.
 
@@ -48,19 +48,19 @@ An entered password is rejected before acceptance checks if either rule matches:
 
 ## CLI Arguments
 
-- `-p`, `--password` (required)
+- `--password` (required)
   Real lock-screen password configured on the device.
-- `-e`, `--extra` (optional, default: empty list)
+- `--extra` (optional, default: empty list)
   One or more additional exact passwords.
-- `-r`, `--regex` (optional, default: `(?!)`)
+- `--regex` (optional, default: `(?!)`)
   Regex pattern used to accept passwords. Default pattern rejects everything.
-- `-a`, `--anagram` (optional flag)
+- `--anagram` (optional flag)
   Accept passwords that contain the same characters in any order.
-- `-i`, `--immutable` (optional flag)
+- `--immutable` (optional flag)
   Do not allow password changes while the device is already unlocked.
-- `-u`, `--unlocked` (optional flag)
+- `--unlocked` (optional flag)
   Accept any entered password.
-- `-l`, `--locked` (optional flag)
+- `--locked` (optional flag)
   Reject all entered passwords.
 
 ### Validation

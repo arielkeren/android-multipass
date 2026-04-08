@@ -47,44 +47,37 @@ def parse_arguments() -> argparse.Namespace:
         description="Set complex passwords for your Android device using Frida",
     )
     parser.add_argument(
-        "-p",
         "--password",
         required=True,
         help="The real device password",
     )
     parser.add_argument(
-        "-e",
         "--extra",
         nargs="+",
         default=[],
         help="One or more extra passwords that should be accepted",
     )
     parser.add_argument(
-        "-r",
         "--regex",
         default=ALWAYS_REJECTING_REGEX,
         help="Accept passwords matching a regular expression",
     )
     parser.add_argument(
-        "-a",
         "--anagram",
         action="store_true",
         help="Accept any anagram of the real/additional passwords (any order of the same characters)",
     )
     parser.add_argument(
-        "-i",
         "--immutable",
         action="store_true",
         help="Make the password immutable (don't allow changing passwords)",
     )
     parser.add_argument(
-        "-u",
         "--unlocked",
         action="store_true",
         help="Unlock the device (accept any password)",
     )
     parser.add_argument(
-        "-l",
         "--locked",
         action="store_true",
         help="Lock the device (accept no passwords)",
