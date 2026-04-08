@@ -13,8 +13,8 @@ def main() -> None:
 
     try:
         arguments = parse_arguments()
-    except ValueError as e:
-        logging.error(e)
+    except ValueError as error:
+        logging.error(error)
         sys.exit(ERROR_EXIT_CODE)
 
     logging.info(f"Arguments parsed successfully: {vars(arguments)}")

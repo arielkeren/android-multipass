@@ -2,6 +2,8 @@ import Java from "frida-java-bridge";
 
 let config;
 
+const WRONG_PASSWORD = [0];
+
 const LOCK_SETTINGS_SERVICE_CLASS_NAME =
   "com.android.server.locksettings.LockSettingsService";
 
@@ -16,32 +18,48 @@ const bytesToString = bytes => {
   return out;
 };
 
+const getDoVerifyCredential = () => {
+  const LockSettingsService = Java.use(LOCK_SETTINGS_SERVICE_CLASS_NAME);
+  return LockSettingsService.doVerifyCredential;
+};
+
+const getKeyguardManager = () => {
+  const ActivityThread = Java.use("android.app.ActivityThread");
+  const app = ActivityThread.currentApplication();
+  const ctx = app.getApplicationContext();
+
+  const KeyguardManager = Java.use("android.app.KeyguardManager");
+  return Java.cast(ctx.getSystemService("keyguard"), KeyguardManager);
+};
+
 const sortString = string => string.split("").sort().join("");
 
-const isAcceptedByDisable = _ => config.disable;
+const isAcceptedByUnlocked = () => config.unlocked;
 
 const isAcceptedByPassword = input => input === config.password;
 
-const isAcceptedByAdditional = input => config.additional.includes(input);
+const isAcceptedByExtra = input => config.extra.includes(input);
 
 const isAcceptedByRegex = input => new RegExp(config.regex).test(input);
 
-const isAcceptedByUnordered = input => {
+const isAcceptedByAnagram = input => {
+  if (!config.anagram) return false;
+
   const unordered_input = sortString(input);
   const unordered_password = sortString(config.password);
   if (unordered_input === unordered_password) return true;
 
-  for (const additional of config.additional) {
-    const unordered_additional = sortString(additional);
-    if (unordered_input === unordered_additional) return true;
+  for (const extra of config.extra) {
+    const unordered_extra = sortString(extra);
+    if (unordered_input === unordered_extra) return true;
   }
 
   return false;
 };
 
 const isAccepted = input => {
-  if (isAcceptedByDisable(input)) {
-    send(`Password accepted by verification being disabled: ${input}`);
+  if (isAcceptedByUnlocked()) {
+    send(`Password accepted by device being unlocked: ${input}`);
     return true;
   }
 
@@ -50,8 +68,8 @@ const isAccepted = input => {
     return true;
   }
 
-  if (isAcceptedByAdditional(input)) {
-    send(`Password accepted by additional password: ${input}`);
+  if (isAcceptedByExtra(input)) {
+    send(`Password accepted by extra password: ${input}`);
     return true;
   }
 
@@ -60,8 +78,30 @@ const isAccepted = input => {
     return true;
   }
 
-  if (isAcceptedByUnordered(input)) {
-    send(`Password accepted by unordered character match: ${input}`);
+  if (isAcceptedByAnagram(input)) {
+    send(`Password accepted by anagram match: ${input}`);
+    return true;
+  }
+
+  send(`Password not accepted by any rule: ${input}`);
+  return false;
+};
+
+const isRejectedByLocked = () => config.locked;
+
+const isRejectedByImmutable = () =>
+  config.immutable && !getKeyguardManager().isKeyguardLocked();
+
+const isRejected = input => {
+  if (isRejectedByLocked()) {
+    send(`Password rejected by device being locked: ${input}`);
+    return true;
+  }
+
+  if (isRejectedByImmutable()) {
+    send(
+      `Password rejected by device being unlocked while immutable is set: ${input}`,
+    );
     return true;
   }
 
@@ -70,9 +110,7 @@ const isAccepted = input => {
 
 const installHook = () => {
   Java.perform(() => {
-    const lockSettingsService = Java.use(LOCK_SETTINGS_SERVICE_CLASS_NAME);
-
-    lockSettingsService.doVerifyCredential.implementation = function (
+    getDoVerifyCredential().implementation = function (
       credential,
       userId,
       progressCallback,
@@ -81,10 +119,17 @@ const installHook = () => {
       const input = bytesToString(credential.mCredential.value);
       send(`Password entered: ${input}`);
 
-      if (isAccepted(input))
-        credential.mCredential.value = stringToBytes(config.password);
-      else send(`Password rejected: ${input}`);
+      if (isRejected(input) || !isAccepted(input)) {
+        credential.mCredential.value = WRONG_PASSWORD;
+        return this.doVerifyCredential(
+          credential,
+          userId,
+          progressCallback,
+          flags,
+        );
+      }
 
+      credential.mCredential.value = stringToBytes(config.password);
       return this.doVerifyCredential(
         credential,
         userId,

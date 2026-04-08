@@ -10,10 +10,12 @@ MESSAGE_EVENT = "message"
 
 class VariableName(enum.StrEnum):
     PASSWORD = "password"
-    ADDITIONAL = "additional"
+    EXTRA = "extra"
     REGEX = "regex"
-    UNORDERED = "unordered"
-    DISABLE = "disable"
+    ANAGRAM = "anagram"
+    IMMUTABLE = "immutable"
+    UNLOCKED = "unlocked"
+    LOCKED = "locked"
 
 
 class MessageType(enum.StrEnum):
@@ -48,9 +50,11 @@ def inject_hook(args: argparse.Namespace) -> None:
     script.exports_sync.init_config(
         {
             VariableName.PASSWORD: args.password,
-            VariableName.ADDITIONAL: args.additional,
+            VariableName.EXTRA: args.extra,
             VariableName.REGEX: args.regex,
-            VariableName.UNORDERED: args.unordered,
-            VariableName.DISABLE: args.disable,
+            VariableName.ANAGRAM: args.anagram,
+            VariableName.IMMUTABLE: args.immutable,
+            VariableName.UNLOCKED: args.unlocked,
+            VariableName.LOCKED: args.locked,
         }
     )
