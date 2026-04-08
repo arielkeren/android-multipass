@@ -9,7 +9,7 @@ ERROR_EXIT_CODE = 1
 
 def main() -> None:
     configure_logger()
-    logging.info("Starting Android MultiPass...")
+    logging.debug("Starting Android MultiPass...")
 
     try:
         arguments = parse_arguments()
