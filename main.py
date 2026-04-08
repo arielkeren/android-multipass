@@ -1,14 +1,14 @@
 import sys
 import logging
+from logger_configuration import configure_logger
 from argument_parser import parse_arguments
 from hook_injector import inject_hook
 
 ERROR_EXIT_CODE = 1
-LOG_FORMAT = "[%(levelname)s] %(message)s"
 
 
 def main() -> None:
-    logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
+    configure_logger()
     logging.info("Starting Android MultiPass...")
 
     try:
