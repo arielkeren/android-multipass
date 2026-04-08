@@ -7,6 +7,12 @@ SCRIPT_PATH = "hook.js"
 PROCESS_TO_ATTACH = "system_server"
 MESSAGE_EVENT = "message"
 
+USER_NAME_TO_ID = {
+    "null": -10000,
+    "frp": -9999,
+    "repair": -9998,
+}
+
 
 class VariableName(enum.StrEnum):
     PASSWORD = "password"
@@ -16,6 +22,7 @@ class VariableName(enum.StrEnum):
     IMMUTABLE = "immutable"
     UNLOCKED = "unlocked"
     LOCKED = "locked"
+    USER = "user"
 
 
 class MessageType(enum.StrEnum):
@@ -27,6 +34,14 @@ class MessageKey(enum.StrEnum):
     TYPE = "type"
     PAYLOAD = "payload"
     DESCRIPTION = "description"
+
+
+def user_id_to_number(user_id: str | None) -> int | None:
+    if user_id is None:
+        return None
+    if user_id.isdigit() or (user_id.startswith("-") and user_id[1:].isdigit()):
+        return int(user_id)
+    return USER_NAME_TO_ID[user_id.lower()]
 
 
 def on_message(message: dict[str, object], _: bytes | None) -> None:
@@ -56,5 +71,6 @@ def inject_hook(args: argparse.Namespace) -> None:
             VariableName.IMMUTABLE: args.immutable,
             VariableName.UNLOCKED: args.unlocked,
             VariableName.LOCKED: args.locked,
+            VariableName.USER: user_id_to_number(args.user),
         }
     )

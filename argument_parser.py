@@ -3,6 +3,8 @@ import re
 
 ALWAYS_REJECTING_REGEX = "(?!)"
 
+ACCEPTED_USER_NAMES = {"null", "frp", "repair"}
+
 
 def is_valid_password(password: str) -> bool:
     return len(password) >= 4
@@ -35,11 +37,23 @@ def validate_locked_unlocked(locked: bool, unlocked: bool) -> None:
         raise ValueError("Cannot specify both '--locked' and '--unlocked'")
 
 
+def validate_user(user: str | None) -> None:
+    if user is not None and not (
+        user.isdigit()
+        or (user.startswith("-") and user[1:].isdigit())
+        or user.lower() in ACCEPTED_USER_NAMES
+    ):
+        raise ValueError(
+            f"Invalid user ID '{user}': Must be a number or one of 'null', 'frp', 'repair'"
+        )
+
+
 def validate_arguments(args: argparse.Namespace) -> None:
     validate_password(args.password)
     validate_extra_passwords(args.extra)
     validate_regex(args.regex)
     validate_locked_unlocked(args.locked, args.unlocked)
+    validate_user(args.user)
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -81,6 +95,9 @@ def parse_arguments() -> argparse.Namespace:
         "--locked",
         action="store_true",
         help="Lock the device (accept no passwords)",
+    )
+    parser.add_argument(
+        "--user", help="The user ID to use (number or 'null', 'frp' or 'repair')"
     )
     arguments = parser.parse_args()
     validate_arguments(arguments)

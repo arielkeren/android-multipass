@@ -132,7 +132,7 @@ const installHook = () => {
 
       return this.doVerifyCredential(
         credential,
-        userId,
+        config.user ?? userId,
         progressCallback,
         flags,
       );
