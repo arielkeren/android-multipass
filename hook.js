@@ -6,6 +6,10 @@ const WRONG_PASSWORD = [0];
 
 const LOCK_SETTINGS_SERVICE_CLASS_NAME =
   "com.android.server.locksettings.LockSettingsService";
+const ACTIVITY_THREAD_CLASS_NAME = "android.app.ActivityThread";
+const KEYGUARD_MANAGER_CLASS_NAME = "android.app.KeyguardManager";
+
+const KEYGUARD_SERVICE_NAME = "keyguard";
 
 const stringToBytes = string =>
   string.split("").map(char => char.charCodeAt(0));
@@ -24,12 +28,15 @@ const getDoVerifyCredential = () => {
 };
 
 const getKeyguardManager = () => {
-  const ActivityThread = Java.use("android.app.ActivityThread");
+  const ActivityThread = Java.use(ACTIVITY_THREAD_CLASS_NAME);
   const app = ActivityThread.currentApplication();
   const ctx = app.getApplicationContext();
 
-  const KeyguardManager = Java.use("android.app.KeyguardManager");
-  return Java.cast(ctx.getSystemService("keyguard"), KeyguardManager);
+  const KeyguardManager = Java.use(KEYGUARD_MANAGER_CLASS_NAME);
+  return Java.cast(
+    ctx.getSystemService(KEYGUARD_SERVICE_NAME),
+    KeyguardManager,
+  );
 };
 
 const sortString = string => string.split("").sort().join("");
