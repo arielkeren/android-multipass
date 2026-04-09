@@ -166,7 +166,7 @@ const installHook = () => {
         send(`Password accepted but real password unknown: ${input}`);
         return verify(WRONG_PASSWORD);
       }
-      return verify(config.password ?? WRONG_PASSWORD);
+      return verify(config.password);
     };
   });
 };
