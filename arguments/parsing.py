@@ -10,8 +10,7 @@ def parse_arguments() -> argparse.Namespace:
     )
     parser.add_argument(
         "--password",
-        required=True,
-        help="The real device password",
+        help="The real device password (instead of waiting it to be discovered)",
     )
     parser.add_argument(
         "--extra",

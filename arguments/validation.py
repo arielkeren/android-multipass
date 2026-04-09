@@ -8,8 +8,8 @@ def _is_valid_password(password: str) -> bool:
     return len(password) >= 4
 
 
-def _validate_password(password: str) -> None:
-    if not _is_valid_password(password):
+def _validate_password(password: str | None) -> None:
+    if password is not None and not _is_valid_password(password):
         raise ValueError(
             f"Invalid real device password '{password}': Passwords must be at least 4 characters long"
         )
