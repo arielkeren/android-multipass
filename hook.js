@@ -116,21 +116,15 @@ const isRejected = input => {
   return false;
 };
 
-const checkPassword = verify => {
-  if (!config.password) return;
-
-  const response = verify(config.password);
-  if (response.mResponseCode.value !== RESPONSE_OK) {
+const checkPassword = check => {
+  if (config.password && !check(config.password)) {
     send(`Password has been changed from: ${config.password}`);
     config.password = null;
   }
 };
 
-const checkInput = (verify, input) => {
-  if (config.password) return;
-
-  const response = verify(input);
-  if (response.mResponseCode.value === RESPONSE_OK) {
+const checkInput = (check, input) => {
+  if (!config.password && check(input)) {
     send(`Password has been changed to: ${input}`);
     config.password = input;
   }
@@ -147,26 +141,28 @@ const installHook = () => {
       const input = bytesToString(credential.mCredential.value);
       send(`Password entered: ${input}`);
 
-      const verify = password => {
+      const verify = (password, shouldInform) => {
         credential.mCredential.value = stringToBytes(password);
         return this.doVerifyCredential(
           credential,
           config.user ?? userId,
-          progressCallback,
+          shouldInform ? progressCallback : null,
           flags,
         );
       };
+      const check = password =>
+        verify(password, false).mResponseCode.value === RESPONSE_OK;
+      const reject = () => verify(WRONG_PASSWORD, true);
 
-      checkPassword(verify);
-      checkInput(verify, input);
+      checkPassword(check);
+      checkInput(check, input);
 
-      if (isRejected(input) || !isAccepted(input))
-        return verify(WRONG_PASSWORD);
+      if (isRejected(input) || !isAccepted(input)) return reject();
       if (!config.password) {
         send(`Password accepted but real password unknown: ${input}`);
-        return verify(WRONG_PASSWORD);
+        return reject();
       }
-      return verify(config.password);
+      return verify(config.password, true);
     };
   });
 };
