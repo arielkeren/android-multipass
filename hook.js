@@ -2,7 +2,7 @@ import Java from "frida-java-bridge";
 
 let config;
 
-const WRONG_PASSWORD = [0];
+const WRONG_PASSWORD = "0";
 const RESPONSE_OK = 0;
 
 const LOCK_SETTINGS_SERVICE_CLASS_NAME =
@@ -116,6 +116,26 @@ const isRejected = input => {
   return false;
 };
 
+const checkPassword = verify => {
+  if (!config.password) return;
+
+  const response = verify(config.password);
+  if (response.mResponseCode.value !== RESPONSE_OK) {
+    send(`Password has been changed from: ${config.password}`);
+    config.password = null;
+  }
+};
+
+const checkInput = (verify, input) => {
+  if (config.password) return;
+
+  const response = verify(input);
+  if (response.mResponseCode.value === RESPONSE_OK) {
+    send(`Password has been changed to: ${input}`);
+    config.password = input;
+  }
+};
+
 const installHook = () => {
   Java.perform(() => {
     getDoVerifyCredential().implementation = function (
@@ -127,30 +147,26 @@ const installHook = () => {
       const input = bytesToString(credential.mCredential.value);
       send(`Password entered: ${input}`);
 
-      if (!config.password) {
-        const verifyCredentialResponse = this.doVerifyCredential(
+      const verify = password => {
+        credential.mCredential.value = stringToBytes(password);
+        return this.doVerifyCredential(
           credential,
           config.user ?? userId,
           progressCallback,
           flags,
         );
-        if (verifyCredentialResponse.mResponseCode.value === RESPONSE_OK) {
-          send(`Discovered password: ${input}`);
-          config.password = input;
-        }
-        return verifyCredentialResponse;
-      }
+      };
+
+      checkPassword(verify);
+      checkInput(verify, input);
 
       if (isRejected(input) || !isAccepted(input))
-        credential.mCredential.value = WRONG_PASSWORD;
-      else credential.mCredential.value = stringToBytes(config.password);
-
-      return this.doVerifyCredential(
-        credential,
-        config.user ?? userId,
-        progressCallback,
-        flags,
-      );
+        return verify(WRONG_PASSWORD);
+      if (!config.password) {
+        send(`Password accepted but real password unknown: ${input}`);
+        return verify(WRONG_PASSWORD);
+      }
+      return verify(config.password ?? WRONG_PASSWORD);
     };
   });
 };
