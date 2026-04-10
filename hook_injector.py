@@ -3,7 +3,7 @@ import logging
 import argparse
 import frida
 
-_SCRIPT_PATH = "hook.js"
+_SCRIPT_PATH = "javascript/hook.js"
 _PROCESS_TO_ATTACH = "system_server"
 _MESSAGE_EVENT = "message"
 
