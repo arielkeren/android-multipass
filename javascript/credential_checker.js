@@ -72,10 +72,7 @@ export default class CredentialChecker {
   }
 
   isRejectedByImmutable() {
-    return (
-      this.config.immutable &&
-      !this.deviceController.getKeyguardManager().isKeyguardLocked()
-    );
+    return this.config.immutable && !this.deviceController.isKeyguardLocked();
   }
 
   isRejected(input) {

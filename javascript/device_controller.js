@@ -17,16 +17,20 @@ export default class DeviceController {
     return LockSettingsService.doVerifyCredential;
   }
 
-  getKeyguardManager() {
+  isKeyguardLocked() {
     const ActivityThread = this.Java.use(ACTIVITY_THREAD_CLASS_NAME);
     const currentApplication = ActivityThread.currentApplication();
     const applicationContext = currentApplication.getApplicationContext();
+    const keyguardSystemService = applicationContext.getSystemService(
+      KEYGUARD_SERVICE_NAME,
+    );
 
     const KeyguardManager = this.Java.use(KEYGUARD_MANAGER_CLASS_NAME);
-    return this.Java.cast(
-      applicationContext.getSystemService(KEYGUARD_SERVICE_NAME),
+    const keyguardManager = this.Java.cast(
+      keyguardSystemService,
       KeyguardManager,
     );
+    return keyguardManager.isKeyguardLocked();
   }
 
   getResponseOk() {
